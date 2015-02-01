@@ -149,12 +149,10 @@ class CalendarObserver(object):
         feed = adapter.get_feed_url(instance) or self.feed
         if adapter.can_delete(instance):
             client = self.get_client()
-            event = self.get_event(client, instance, feed)
-            if event:
-                if adapter.can_notify(instance):
-                    event.send_event_notifications = SendEventNotifications(
-                        value='true')
-                client.Delete(event)
+            event_id = CalendarEvent.objects.get_event_id(instance, feed)
+            print "Event id is '%s" % event_id
+            if event_id:
+                client.events().delete(calendarId=feed, eventId=event_id).execute()
         CalendarEvent.objects.delete_event_id(instance, feed)
 
 from django.conf import settings

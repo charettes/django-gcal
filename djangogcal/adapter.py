@@ -58,7 +58,7 @@ class CalendarEventData(object):
             'end': {
                 'dateTime': format_datetime(self.end)
             },
-            'attendees': [{'email': attendee} for attendee in self.attendees],
+            # 'attendees': [{'email': attendee} for attendee in self.attendees],
         }
         if self.reminder_minutes:
             new_event_data['reminders'] = {
