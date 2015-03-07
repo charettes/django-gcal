@@ -7,10 +7,12 @@ djangogcal.adapter
 from datetime import datetime
 
 from atom.data import Content, Title
+from gdata.data import Reminder
 from gdata.calendar.data import When, CalendarWhere, EventWho
 from django.utils.tzinfo import FixedOffset, LocalTimezone
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.000Z'
+
 
 def format_datetime(date):
     """
@@ -20,35 +22,55 @@ def format_datetime(date):
     local = date.replace(tzinfo=LocalTimezone(date))
     return local.astimezone(FixedOffset(0)).strftime(DATE_FORMAT)
 
+
 class CalendarEventData(object):
     """
     A data-structure which converts Python data-types into Google Data API
     objects which can be transmitted to Google services.
     """
     
-    def __init__(self, start, end, title="", where=None, who=None, content=""):
+    def __init__(self, start, end, attendees, title="", description=None, location=None,
+                 reminder_minutes=None, reminder_method="popup"):
         """
         Instantiates a new instance of CalendarEventData.
         """
         self.start = start
         self.end = end
         self.title = title
-        self.where = where or []
-        self.who = who or []
-        self.content = content
-    
-    def populate_event(self, event):
+        self.location = location
+        self.attendees = attendees
+        self.description = description
+        self.reminder_minutes = reminder_minutes
+        self.reminder_method = reminder_method
+
+    def populate_event(self, event_data={}):
         """
         Populates the parameters of a Google Calendar event object.
         """
-        event.when = [When(
-            start=format_datetime(self.start),
-            end=format_datetime(self.end)
-        )]
-        event.title = Title(text=self.title)
-        event.where = [CalendarWhere(value_string=x) for x in self.where]
-        event.who = [EventWho(email=x) for x in self.who]
-        event.content = Content(text=self.content)
+
+        new_event_data = {
+            'summary': self.title,
+            'location': self.location,
+            'description': self.description,
+            'start': {
+                'dateTime': format_datetime(self.start)
+            },
+            'end': {
+                'dateTime': format_datetime(self.end)
+            },
+            # 'attendees': [{'email': attendee} for attendee in self.attendees],
+        }
+        if self.reminder_minutes:
+            new_event_data['reminders'] = {
+                'useDefault': False,
+                'overrides': [{
+                    'method': self.reminder_method,
+                    'minutes': str(self.reminder_minutes)
+                }]
+            }
+        event_data.update(new_event_data)
+        return event_data
+
 
 class RawCalendarEventData(object):
     """
