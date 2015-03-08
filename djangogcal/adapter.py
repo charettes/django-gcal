@@ -1,14 +1,5 @@
-"""
-djangogcal.adapter
+from __future__ import unicode_literals
 
-
-"""
-
-from datetime import datetime
-
-from atom.data import Content, Title
-from gdata.data import Reminder
-from gdata.calendar.data import When, CalendarWhere, EventWho
 from django.utils.tzinfo import FixedOffset, LocalTimezone
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.000Z'
@@ -28,7 +19,7 @@ class CalendarEventData(object):
     A data-structure which converts Python data-types into Google Data API
     objects which can be transmitted to Google services.
     """
-    
+
     def __init__(self, start, end, attendees, title="", description=None, location=None,
                  reminder_minutes=None, reminder_method="popup"):
         """
@@ -47,7 +38,6 @@ class CalendarEventData(object):
         """
         Populates the parameters of a Google Calendar event object.
         """
-
         new_event_data = {
             'summary': self.title,
             'location': self.location,
@@ -58,7 +48,7 @@ class CalendarEventData(object):
             'end': {
                 'dateTime': format_datetime(self.end)
             },
-            # 'attendees': [{'email': attendee} for attendee in self.attendees],
+            'attendees': [{'email': attendee} for attendee in self.attendees],
         }
         if self.reminder_minutes:
             new_event_data['reminders'] = {
@@ -77,14 +67,14 @@ class RawCalendarEventData(object):
     A data-structure which accepts Google Calendar data types, for users who
     need access to advanced fields.
     """
-    
+
     def __init__(self, when, **kwargs):
         """
         Instantiates a new instance of RawCalendarEventData.
         """
         self.when = when
         self.kwargs = kwargs
-    
+
     def populate_event(self, event):
         """
         Populates the parameters of a Google Calendar event object.
@@ -93,24 +83,21 @@ class RawCalendarEventData(object):
         for key in self.kwargs:
             setattr(event, key, self.kwargs[key])
 
+
 class CalendarAdapter(object):
-    """
-    
-    """
-    
     def __init__(self):
         """
         Instantiates a new instance of CalendarAdapter.
         """
         pass
-    
+
     def can_save(self, instance):
         """
         Should return a boolean indicating whether the object can be stored or
         updated in Google Calendar.
         """
         return True
-    
+
     def can_delete(self, instance):
         """
         Should return a boolean indicating whether the object can be deleted
@@ -124,18 +111,17 @@ class CalendarAdapter(object):
         event change notifications.
         """
         return False
-    
+
     def get_event_data(self, instance):
         """
         This method should be implemented by users, and must return an object
         conforming to the CalendarEventData protocol.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def get_feed_url(self, instance):
         """
-        This method may be implemented by users, and should return a string to 
+        This method may be implemented by users, and should return a string to
         be used to specify the feed for the event.
         """
         raise None
-    

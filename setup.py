@@ -1,10 +1,16 @@
-from distutils.core import setup
+from __future__ import unicode_literals
+
+from setuptools import find_packages, setup
+
 setup(
-    name = "djangogcal",
-    packages = ["djangogcal", ],
-    version = "0.2.1",
-    description = "A Django application allowing developers to synchronise instances of their models with Google Calendar.",
-    author = "Incuna Ltd",
-    author_email = "admin@incuna.com",
-    url = "http://incuna.com/",
+    name="djangogcal",
+    packages=find_packages(),
+    install_requires=['django>=1.6', 'google-api-python-client', 'requests', 'oauth2client'],
+    version="0.2.2",
+    description=(
+        "Django application allowing developers to synchronize instances of their models with Google Calendar."
+    ),
+    author="Incuna Ltd",
+    author_email="admin@incuna.com",
+    url="http://incuna.com/",
 )

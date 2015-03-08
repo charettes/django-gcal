@@ -1,27 +1,16 @@
-"""
-djangogcal.observer
+from __future__ import unicode_literals
 
-
-"""
-
-from celery.task import task
-from django.db.models import signals
-from gdata.calendar import SendEventNotifications
-from gdata.calendar.data import CalendarEventEntry
-from gdata.calendar.client import CalendarClient
-from oauth2client.client import SignedJwtAssertionCredentials, AccessTokenCredentials
-from httplib2 import Http
-from apiclient.discovery import build
 import requests
+from apiclient.discovery import build
+from django.db.models import signals
+from httplib2 import Http
+from oauth2client.client import AccessTokenCredentials
 
-from models import CalendarEvent
+from .models import CalendarEvent
 
 
 class CalendarObserver(object):
-    """
-    
-    """
-    
+
     def __init__(self, email, private_key, refresh_token=None,
                  feed=None, client=None):
         """
@@ -33,7 +22,7 @@ class CalendarObserver(object):
         self.private_key = private_key
         self.feed = feed
         self.client = client
-    
+
     def observe(self, model, adapter):
         """
         Establishes a connection between the model and Google Calendar, using
@@ -44,7 +33,7 @@ class CalendarObserver(object):
                                   dispatch_uid="djangogcal post-save signal")
         signals.post_delete.connect(self.on_delete, sender=model,
                                     dispatch_uid="djangogcal post-delete signal")
-    
+
     def observe_related(self, model, related, selector):
         """
         Updates the Google Calendar entry for model when the related model is
@@ -57,24 +46,24 @@ class CalendarObserver(object):
         signals.post_save.connect(on_related_update, sender=related, weak=False)
         signals.post_delete.connect(on_related_update, sender=related,
                                     weak=False)
-    
+
     def on_update(self, **kwargs):
         """
         Called by Django's signal mechanism when an observed model is updated.
         """
         self.get_client()
         self.update(self, kwargs['sender'], kwargs['instance'])
-    
+
     def on_delete(self, **kwargs):
         """
         Called by Django's signal mechanism when an observed model is deleted.
         """
         self.get_client()
         self.delete(self, kwargs['sender'], kwargs['instance'])
-    
+
     def get_client(self):
         """
-        Get an authenticated gdata.calendar.client.CalendarClient instance.
+        Get an authenticated calendar api v3 instance.
         """
         token = self.get_access_token()
         if self.client is None:
@@ -82,8 +71,6 @@ class CalendarObserver(object):
             # credentials = SignedJwtAssertionCredentials(self.email, self.private_key,
             #                                             "https://www.googleapis.com/auth/calendar")
             http = credentials.authorize(Http())
-            # self.client = CalendarClient(source='django-gcal')
-            # self.client.ClientLogin(self.email, self.password, self.client.source)
             self.client = build('calendar', 'v3', http=http)
         return self.client
 
@@ -117,7 +104,6 @@ class CalendarObserver(object):
             event = None
         return event
 
-    @task(ignore_result=True)
     def update(self, sender, instance):
         """
         Update or create an entry in Google Calendar for the given instance
@@ -139,7 +125,6 @@ class CalendarObserver(object):
                 CalendarEvent.objects.set_event_id(instance, feed,
                                                    created_event['id'])
 
-    @task(ignore_result=True)
     def delete(self, sender, instance):
         """
         Delete the entry in Google Calendar corresponding to the given instance
@@ -150,15 +135,6 @@ class CalendarObserver(object):
         if adapter.can_delete(instance):
             client = self.get_client()
             event_id = CalendarEvent.objects.get_event_id(instance, feed)
-            print "Event id is '%s" % event_id
             if event_id:
                 client.events().delete(calendarId=feed, eventId=event_id).execute()
         CalendarEvent.objects.delete_event_id(instance, feed)
-
-from django.conf import settings
-
-refresh_token = "1/Zqbn36RZl4bbC2g_XiC_16N8-cR_05rNn82Ijl1P2nc"
-
-ctest = CalendarObserver(settings.GCAL_EMAIL,
-                         settings.GCAL_SECRET_KEY,
-                         refresh_token=refresh_token)
